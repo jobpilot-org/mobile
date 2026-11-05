@@ -40,7 +40,7 @@ export function AiSettings() {
         hint={
           isDemo
             ? 'In der Demo ist ein Beispielprofil hinterlegt.'
-            : 'Bleibt auf deinem Gerät. Für Abgleich und Anschreiben wird es mit der jeweiligen Anfrage an Claude gesendet.'
+            : 'Bleibt auf deinem Gerät. Für Abgleich und Anschreiben wird es mit der jeweiligen Anfrage an den jobpilot-Server gesendet und dort von einem KI-Modell verarbeitet.'
         }
       />
       <View style={styles.row}>
@@ -58,8 +58,8 @@ export function AiSettings() {
       <View style={[styles.consent, { borderTopColor: theme.border }]}>
         <Text style={[styles.consentText, { color: theme.textSecondary }]}>
           {consent
-            ? 'Du hast zugestimmt, dass Anzeigentexte und Profil zur Auswertung an Claude (Anthropic) gesendet werden.'
-            : 'Vor der ersten Nutzung fragt jobpilot, ob Texte an Claude (Anthropic) gesendet werden dürfen.'}
+            ? 'Du hast zugestimmt, dass Anzeigentexte und Profil zur Auswertung an ein KI-Modell gesendet werden.'
+            : 'Vor der ersten Nutzung fragt jobpilot, ob Texte an ein KI-Modell gesendet werden dürfen.'}
         </Text>
         {consent ? (
           <Button

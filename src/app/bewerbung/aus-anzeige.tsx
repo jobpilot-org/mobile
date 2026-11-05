@@ -21,7 +21,7 @@ type Step =
   | { kind: 'loading' }
   | { kind: 'review'; extraction: AiResponse<'stellenanzeige'> };
 
-/** Anzeigentext einfügen → Claude füllt die Felder vor → prüfen und speichern */
+/** Anzeigentext einfügen → das KI-Modell füllt die Felder vor → prüfen und speichern */
 export default function FromPostingScreen() {
   const theme = useTheme();
   const router = useRouter();

@@ -37,7 +37,7 @@ const DECISIONS = [
   ],
   [
     'KI mit klaren Grenzen',
-    'Claude über eigene API-Routen, der Schlüssel bleibt auf dem Server; Structured Outputs mit gemeinsamen zod-Schemas, Nutzertexte als Daten gekennzeichnet.',
+    'Das KI-Modell läuft hinter eigenen API-Routen, der Schlüssel bleibt auf dem Server; Structured Outputs mit gemeinsamen zod-Schemas, Nutzertexte als Daten gekennzeichnet.',
   ],
   [
     'Qualität',

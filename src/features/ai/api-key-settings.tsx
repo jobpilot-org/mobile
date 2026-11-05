@@ -35,7 +35,7 @@ function statusText(status: ApiKeyStatus | null) {
   )}`;
 }
 
-/** Eigener Anthropic-Key; in der Demo zahlt der Server und es gibt nichts zu verwalten */
+/** Eigener Key für den konfigurierten KI-Provider; in der Demo zahlt der Server */
 export function ApiKeySettings() {
   if (isDemo) return null;
   return <ApiKeyForm />;
@@ -72,7 +72,7 @@ function ApiKeyForm() {
     const confirmed = await confirm({
       title: 'API-Key löschen?',
       message:
-        'Dein gespeicherter Anthropic-API-Key wird gelöscht. Der KI-Assistent funktioniert erst wieder, wenn du einen neuen Key hinterlegst.',
+        'Dein gespeicherter API-Key wird gelöscht. Der KI-Assistent funktioniert erst wieder, wenn du einen neuen Key hinterlegst.',
       confirmLabel: 'Löschen',
     });
     if (!confirmed) return;
@@ -105,7 +105,7 @@ function ApiKeyForm() {
     <View style={[styles.body, { borderTopColor: theme.border }]}>
       <Text style={[styles.caption, { color: theme.textSecondary }]}>{statusText(status)}</Text>
       <FormField
-        label="Anthropic-API-Key"
+        label="KI-API-Key"
         value={draft}
         onChangeText={(text) => {
           setDraft(text);

@@ -225,7 +225,7 @@ export default function AssistantScreen() {
             </View>
           </View>
           <Text style={[styles.disclaimer, { color: theme.textSecondary }]}>
-            Erstellt mit Claude – bitte vor dem Verwenden prüfen.
+            Erstellt mit einem KI-Modell – bitte vor dem Verwenden prüfen.
           </Text>
         </>
       ) : null}

@@ -10,12 +10,12 @@ export type CredentialResolution =
   | { status: 'ok'; userId: string; apiKey: string }
   /** Kein Bearer-Token oder ein Token, das Supabase nicht kennt */
   | { status: 'unauthorized' }
-  /** Angemeldet, aber noch kein eigener Anthropic-Key hinterlegt */
+  /** Angemeldet, aber noch kein eigener KI-Key hinterlegt */
   | { status: 'missing-key' }
   /** Supabase oder Vault antwortet nicht – kein Fehler des Nutzers */
   | { status: 'unavailable' };
 
-/** Weist eine Anfrage aus und liefert den Anthropic-Key des angemeldeten Nutzers */
+/** Weist eine Anfrage aus und liefert den KI-Key des angemeldeten Nutzers */
 export type CredentialResolver = (request: Request) => Promise<CredentialResolution>;
 
 /** Access-Token aus dem `Authorization`-Header; ein JWT enthält keinen Leerraum */
@@ -54,7 +54,7 @@ export function createCredentialResolver(
 
     const { data: apiKey, error: vaultError } = await client.rpc('get_ai_api_key');
     if (vaultError) {
-      console.error('Anthropic-Key aus dem Supabase Vault nicht lesbar:', vaultError.message);
+      console.error('KI-Key aus dem Supabase Vault nicht lesbar:', vaultError.message);
       return { status: 'unavailable' };
     }
     if (typeof apiKey !== 'string' || apiKey === '') return { status: 'missing-key' };
