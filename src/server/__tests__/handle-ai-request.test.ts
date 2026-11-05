@@ -342,14 +342,17 @@ describe('handleAiRequest: Status-Mapping des KI-Dienstes', () => {
     [403, 400],
     [500, 502],
     [undefined, 502],
-  ])('übersetzt Dienst-Status %s im angemeldeten Betrieb in HTTP %s', async (upstream, expected) => {
-    const response = await handleAiRequest(
-      'stellenanzeige',
-      post({ posting: POSTING }),
-      dependencies({ createService: () => failing(new AiApiError(upstream)) }),
-    );
-    expect(response.status).toBe(expected);
-  });
+  ])(
+    'übersetzt Dienst-Status %s im angemeldeten Betrieb in HTTP %s',
+    async (upstream, expected) => {
+      const response = await handleAiRequest(
+        'stellenanzeige',
+        post({ posting: POSTING }),
+        dependencies({ createService: () => failing(new AiApiError(upstream)) }),
+      );
+      expect(response.status).toBe(expected);
+    },
+  );
 
   it('meldet eine unvollständige Antwort als 502', async () => {
     const response = await handleAiRequest(

@@ -14,11 +14,9 @@ type AiEnv = Record<string, string | undefined>;
  * null bedeutet: kein Provider eingerichtet – der Assistent antwortet mit 503,
  * die App und der Server starten trotzdem normal.
  */
-export function createProviderFromEnv(
-  env: AiEnv = process.env,
-  apiKey?: string,
-): AiService | null {
-  const provider = env.AI_PROVIDER?.trim() || 'anthropic';
+export function createProviderFromEnv(env: AiEnv = process.env, apiKey?: string): AiService | null {
+  // Großschreibung und Leerzeichen ignorieren: ein Kopierfehler soll nicht zur 503 führen
+  const provider = (env.AI_PROVIDER?.trim() || 'anthropic').toLowerCase();
 
   if (provider === 'anthropic') {
     const resolvedKey = (apiKey === undefined ? env.ANTHROPIC_API_KEY : apiKey)?.trim();

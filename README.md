@@ -122,13 +122,13 @@ npm start                    # der Dev-Server stellt auch die API-Routen bereit
 
 | Variable                               | Wo sie gilt          | Wofür                                                                                         |
 | -------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------- |
-| `AI_PROVIDER`                          | nur Server           | `anthropic` (Standard) oder `openai`                                                           |
+| `AI_PROVIDER`                          | nur Server           | `anthropic` (Standard) oder `openai`                                                          |
 | `EXPO_PUBLIC_SUPABASE_URL`             | App **und** Server   | Projekt-URL; der Server prüft damit die Access-Tokens der App                                 |
 | `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | App **und** Server   | Anmeldung und API-Zugriff; der Server reicht damit das Token des Aufrufers an Postgres weiter |
-| `ANTHROPIC_API_KEY`                    | nur Server, nur Demo | Gemeinsamer Anthropic-Key der öffentlichen Demo (`JOBPILOT_DEMO=1`)                            |
-| `OPENAI_API_KEY`                       | nur Server, nur Demo | Gemeinsamer OpenAI-Key der öffentlichen Demo bei `AI_PROVIDER=openai`                          |
-| `OPENAI_MODEL`                         | nur Server           | OpenAI-Modell, Standard `gpt-6-astra`                                                          |
-| `OPENAI_BASE_URL`                      | nur Server           | Optionaler OpenAI-kompatibler Endpunkt oder Gateway                                            |
+| `ANTHROPIC_API_KEY`                    | nur Server, nur Demo | Gemeinsamer Anthropic-Key der öffentlichen Demo (`JOBPILOT_DEMO=1`)                           |
+| `OPENAI_API_KEY`                       | nur Server, nur Demo | Gemeinsamer OpenAI-Key der öffentlichen Demo bei `AI_PROVIDER=openai`                         |
+| `OPENAI_MODEL`                         | nur Server           | OpenAI-Modell, Standard `gpt-6-astra`                                                         |
+| `OPENAI_BASE_URL`                      | nur Server           | Optionaler OpenAI-kompatibler Endpunkt oder Gateway                                           |
 | `JOBPILOT_DEMO=1`                      | nur Server           | Demo-Betrieb: keine Anmeldung, nur Demo-Inhalte, IP-Limit, Zwischenspeicher                   |
 
 Ohne eigenen Key funktioniert die App normal; nur der Assistent verweist auf die Einstellungen. In der Demo führt ein fehlender Server-Key zu einer Einrichtungsmeldung. Ein unbekannter `AI_PROVIDER` wird geloggt und wie ein fehlender Key behandelt. Ohne Supabase-Konfiguration antworten die KI-Routen außerhalb der Demo mit einem Serverfehler, weil sie weder Tokens prüfen noch Keys lesen können.

@@ -181,7 +181,9 @@ export async function handleAiRequest(
             'Der KI-Assistent ist auf diesem Server nicht richtig eingerichtet.',
           );
         }
-        console.error(`KI-Dienst: hinterlegter API-Key des Nutzers wird abgelehnt (Status ${error.status})`);
+        console.error(
+          `KI-Dienst: hinterlegter API-Key des Nutzers wird abgelehnt (Status ${error.status})`,
+        );
         return errorResponse(
           400,
           'Dein API-Key wurde abgelehnt. Bitte ersetze ihn in den Einstellungen.',

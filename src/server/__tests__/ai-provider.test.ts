@@ -56,6 +56,13 @@ describe('createProviderFromEnv', () => {
     expect(createAnthropicService).not.toHaveBeenCalled();
   });
 
+  it('akzeptiert abweichende Großschreibung und Leerzeichen', () => {
+    createProviderFromEnv({ AI_PROVIDER: ' OpenAI ', OPENAI_API_KEY: 'sk-openai-test' });
+    expect(jest.mocked(createOpenAiService)).toHaveBeenCalledTimes(1);
+    expect(createAnthropicService).not.toHaveBeenCalled();
+    expect(logged).not.toHaveBeenCalled();
+  });
+
   it('übernimmt OPENAI_MODEL als Modell und fällt sonst auf den Standard zurück', () => {
     createProviderFromEnv({ AI_PROVIDER: 'openai', OPENAI_API_KEY: 'sk-openai-test' });
     expect(jest.mocked(createOpenAiService).mock.calls[0][1]).toBe(OPENAI_MODEL);
