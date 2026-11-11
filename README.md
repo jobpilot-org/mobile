@@ -110,6 +110,25 @@ npm start                    # der Dev-Server stellt auch die API-Routen bereit
 
 Ohne Key funktioniert die App normal, nur der Assistent meldet, dass er nicht eingerichtet ist.
 
+### Anmeldung (Supabase)
+
+Die App meldet sich mit E-Mail und Passwort an einem Supabase-Projekt an. Die beiden Werte dafür stehen in `.env` (nicht eingecheckt) und zeigen auf das Cloud-Projekt. Konten werden im Supabase-Dashboard angelegt: Die App bietet keine Registrierung, und Sign-ups sind im Projekt abgeschaltet.
+
+#### Lokale Supabase-Instanz
+
+```bash
+cd backend && supabase start      # zeigt URLs und Keys an, auch später über: supabase status
+```
+
+Die Werte aus der Ausgabe in `mobile/.env.local` eintragen – die Datei überschreibt `.env` und ist nicht eingecheckt:
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key aus der Ausgabe>
+```
+
+`localhost` passt für Web und iOS-Simulator. Der Android-Emulator erreicht den Rechner unter `http://10.0.2.2:54321`, ein echtes Gerät nur über die LAN-Adresse des Rechners (`http://192.168.x.x:54321`). Nach einer Änderung an den Variablen den Dev-Server neu starten. Auch lokal gilt: Nutzer im Dashboard unter `http://localhost:54323` anlegen (oder per Seed-SQL), weil Sign-ups abgeschaltet sind.
+
 ### Web-Version
 
 ```bash

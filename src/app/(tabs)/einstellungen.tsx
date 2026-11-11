@@ -5,7 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useLive, useRepositories } from '@/db/hooks';
 import { createDemoBackup } from '@/features/applications/demo-data';
+import { AccountSettings } from '@/features/auth/account-settings';
 import { AiSettings } from '@/features/ai/ai-settings';
+import { isDemo } from '@/features/demo/mode';
 import { ReminderSettings } from '@/features/reminders/reminder-settings';
 import {
   exportBackupFile,
@@ -38,6 +40,13 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={[styles.eyebrow, { color: theme.accentText }]}>APP</Text>
         <Text style={[styles.title, { color: theme.text }]}>Einstellungen</Text>
+
+        {/* Die Demo läuft ohne Anmeldung, dort gibt es kein Konto */}
+        {isDemo ? null : (
+          <Section title="Konto">
+            <AccountSettings />
+          </Section>
+        )}
 
         <Section title="Erinnerungen">
           <ReminderSettings />
