@@ -13,6 +13,8 @@ type FormFieldProps = Pick<
   | 'inputMode'
   | 'multiline'
   | 'returnKeyType'
+  | 'onSubmitEditing'
+  | 'secureTextEntry'
   | 'autoFocus'
   | 'editable'
 > & {
