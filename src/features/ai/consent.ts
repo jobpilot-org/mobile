@@ -10,7 +10,7 @@ export async function ensureAiConsent({ settings }: Repositories): Promise<boole
   const accepted = await confirm({
     title: 'KI-Assistent verwenden?',
     message:
-      'Für diese Funktion werden der Text der Stellenanzeige und – falls nötig – dein Profil an den jobpilot-Server gesendet und dort von einem KI-Modell verarbeitet. Gespeichert wird das Ergebnis nur auf deinem Gerät. Bitte keine Daten einfügen, die du nicht teilen möchtest.',
+      'Für diese Funktion werden der Text der Stellenanzeige und – falls nötig – dein Profil an den jobpilot-Server gesendet. Der Server leitet die Daten zur Verarbeitung durch ein KI-Modell an den konfigurierten externen KI-Anbieter weiter. Gespeichert wird das Ergebnis nur auf deinem Gerät. Bitte keine Daten einfügen, die du nicht teilen möchtest.',
     confirmLabel: 'Einverstanden',
   });
   if (accepted) settings.set('ai.consent', 'yes');

@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import OpenAI, { RateLimitError } from 'openai';
-import { LengthFinishReasonError } from 'openai/error';
+import { ContentFilterFinishReasonError, LengthFinishReasonError } from 'openai/error';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { ZodError } from 'zod';
 
@@ -180,6 +180,14 @@ describe('createOpenAiService', () => {
         }),
       ).rejects.toBeInstanceOf(AiIncompleteError);
     }
+  });
+
+  it('macht aus einer Inhaltsfilterung des SDK einen Ablehnungsfehler', async () => {
+    const run = createOpenAiService(
+      fakeClient({ error: new ContentFilterFinishReasonError() }).client,
+    ).run('stellenanzeige', { posting: POSTING });
+
+    await expect(run).rejects.toBeInstanceOf(AiRefusalError);
   });
 
   it('macht aus dem Token-Limit des SDK einen unvollständigen Fehler', async () => {

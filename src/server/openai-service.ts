@@ -1,5 +1,5 @@
 import OpenAI, { APIError } from 'openai';
-import { LengthFinishReasonError } from 'openai/error';
+import { ContentFilterFinishReasonError, LengthFinishReasonError } from 'openai/error';
 import { zodResponseFormat } from 'openai/helpers/zod';
 import { ZodError, type z } from 'zod';
 
@@ -54,6 +54,7 @@ export function createOpenAiService(
         return choice.message.parsed as AiResponse<A>;
       } catch (error) {
         // Das SDK wirft bei Token-Limit und bei nicht schema-konformer Antwort eigene Fehler
+        if (error instanceof ContentFilterFinishReasonError) throw new AiRefusalError();
         if (error instanceof LengthFinishReasonError) throw new AiIncompleteError();
         if (error instanceof ZodError || error instanceof SyntaxError) {
           throw new AiIncompleteError();
