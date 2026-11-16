@@ -63,7 +63,7 @@ function renderSettings() {
 
 /** Tippen wie im Feld: `userEvent.type` wartet die Zustandsänderungen ab */
 async function typeKey(value: string) {
-  await userEvent.type(screen.getByLabelText('Anthropic-API-Key'), value);
+  await userEvent.type(screen.getByLabelText('KI-API-Key'), value);
 }
 
 beforeEach(() => {
@@ -104,21 +104,21 @@ describe('ApiKeySettings', () => {
     await userEvent.press(screen.getByRole('button', { name: 'Key speichern' }));
 
     expect(mockSaveKey).toHaveBeenCalledWith(NEW_KEY);
-    expect(screen.getByLabelText('Anthropic-API-Key').props.value).toBe('');
+    expect(screen.getByLabelText('KI-API-Key').props.value).toBe('');
     expect(mockShowToast).toHaveBeenCalledWith({ message: 'API-Key gespeichert' });
     expect(screen.getByRole('button', { name: 'Key ersetzen' })).toBeOnTheScreen();
     expect(screen.getByText('KI: configured')).toBeOnTheScreen();
   });
 
   it('weist unbrauchbare Eingaben vor dem Speichern ab', async () => {
-    mockInputError.mockReturnValue('Bitte gib deinen Anthropic-API-Key ein.');
+    mockInputError.mockReturnValue('Bitte gib deinen API-Key ein.');
     await renderSettings();
     await screen.findByText('Noch kein eigener Key hinterlegt.');
 
     await typeKey('x');
     await userEvent.press(screen.getByRole('button', { name: 'Key speichern' }));
 
-    expect(screen.getByText('Bitte gib deinen Anthropic-API-Key ein.')).toBeOnTheScreen();
+    expect(screen.getByText('Bitte gib deinen API-Key ein.')).toBeOnTheScreen();
     expect(mockSaveKey).not.toHaveBeenCalled();
   });
 
@@ -196,7 +196,7 @@ describe('ApiKeySettings', () => {
 
     await renderSettings();
 
-    expect(screen.queryByLabelText('Anthropic-API-Key')).not.toBeOnTheScreen();
+    expect(screen.queryByLabelText('KI-API-Key')).not.toBeOnTheScreen();
     expect(mockLoadStatus).not.toHaveBeenCalled();
     // Die übrige App sieht die KI trotzdem als verfügbar
     expect(screen.getByText('KI: configured')).toBeOnTheScreen();

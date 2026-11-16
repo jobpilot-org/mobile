@@ -1,5 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
-
 import { requestSchemas, type AiAction } from '@/domain/ai';
 import { isDemoRequest } from '@/domain/demo';
 import {
@@ -8,11 +6,12 @@ import {
   type CredentialResolver,
 } from '@/server/ai-credentials';
 import {
+  AiApiError,
   AiIncompleteError,
   AiRefusalError,
-  createAiService,
   type AiService,
-} from '@/server/ai-service';
+} from '@/server/ai-contract';
+import { createProviderFromEnv } from '@/server/ai-provider';
 import { createRateLimiter } from '@/server/rate-limit';
 
 const HOUR = 60 * 60 * 1000;
@@ -30,8 +29,8 @@ type Dependencies = {
   demo: { service: AiService | null; cache: Map<string, unknown> } | null;
   /** Angemeldeter Betrieb: prüft das Bearer-Token und liefert den Key des Nutzers */
   resolveCredentials: CredentialResolver;
-  /** Baut den Anthropic-Service für einen aufgelösten Key */
-  createService: (apiKey: string) => AiService;
+  /** Baut den konfigurierten Provider für einen aufgelösten Key */
+  createService: (apiKey: string) => AiService | null;
 };
 
 let demoService: AiService | null | undefined;
@@ -39,14 +38,14 @@ let demoService: AiService | null | undefined;
 function defaultDependencies(): Dependencies {
   if (DEMO && demoService === undefined) {
     // Client erst bei Bedarf anlegen – ohne Key soll der Server trotzdem starten
-    demoService = process.env.ANTHROPIC_API_KEY ? createAiService(new Anthropic()) : null;
+    demoService = createProviderFromEnv();
   }
   return {
     allow: limiter.allow,
     demo: DEMO ? { service: demoService ?? null, cache: demoCache } : null,
     resolveCredentials: resolveAiCredentials,
     // Jede Anfrage bekommt einen eigenen Client: kein Key wird zwischen Nutzern geteilt
-    createService: (apiKey) => createAiService(new Anthropic({ apiKey })),
+    createService: (apiKey) => createProviderFromEnv(process.env, apiKey),
   };
 }
 
@@ -92,7 +91,7 @@ async function identifyCaller(
         return {
           error: errorResponse(
             409,
-            'Für den KI-Assistenten fehlt noch dein eigener Anthropic-API-Key. Bitte hinterlege ihn in den Einstellungen.',
+            'Für den KI-Assistenten fehlt noch dein eigener API-Key. Bitte hinterlege ihn in den Einstellungen.',
           ),
         };
       case 'unavailable':
@@ -102,8 +101,15 @@ async function identifyCaller(
             'Der KI-Assistent ist gerade nicht verfügbar. Bitte versuche es später erneut.',
           ),
         };
-      case 'ok':
-        return { service: deps.createService(resolved.apiKey), rateLimitKey: resolved.userId };
+      case 'ok': {
+        const service = deps.createService(resolved.apiKey);
+        if (!service) {
+          return {
+            error: errorResponse(503, 'Der KI-Assistent ist auf diesem Server nicht eingerichtet.'),
+          };
+        }
+        return { service, rateLimitKey: resolved.userId };
+      }
     }
   }
 
@@ -159,26 +165,31 @@ export async function handleAiRequest(
     if (error instanceof AiIncompleteError) {
       return errorResponse(502, 'Die Antwort war unvollständig. Bitte versuche es noch einmal.');
     }
-    if (error instanceof Anthropic.RateLimitError) {
-      return errorResponse(429, 'Der KI-Dienst ist gerade ausgelastet. Bitte gleich noch einmal.');
-    }
-    if (error instanceof Anthropic.AuthenticationError) {
-      // In der Demo ist der Server-Key das Problem, sonst der Key des Nutzers
-      if (deps.demo) {
-        console.error('Claude API: API-Key des Servers wird abgelehnt');
+    if (error instanceof AiApiError) {
+      if (error.status === 429) {
         return errorResponse(
-          503,
-          'Der KI-Assistent ist auf diesem Server nicht richtig eingerichtet.',
+          429,
+          'Der KI-Dienst ist gerade ausgelastet. Bitte gleich noch einmal.',
         );
       }
-      console.error('Claude API: hinterlegter API-Key des Nutzers wird abgelehnt');
-      return errorResponse(
-        400,
-        'Dein Anthropic-API-Key wurde abgelehnt. Bitte ersetze ihn in den Einstellungen.',
-      );
-    }
-    if (error instanceof Anthropic.APIError) {
-      console.error(`Claude API-Fehler ${error.status}:`, error.message);
+      if (error.status === 401 || error.status === 403) {
+        // In der Demo ist der Server-Key das Problem, sonst der Key des Nutzers
+        if (deps.demo) {
+          console.error(`KI-Dienst: API-Key des Servers wird abgelehnt (Status ${error.status})`);
+          return errorResponse(
+            503,
+            'Der KI-Assistent ist auf diesem Server nicht richtig eingerichtet.',
+          );
+        }
+        console.error(
+          `KI-Dienst: hinterlegter API-Key des Nutzers wird abgelehnt (Status ${error.status})`,
+        );
+        return errorResponse(
+          400,
+          'Dein API-Key wurde abgelehnt. Bitte ersetze ihn in den Einstellungen.',
+        );
+      }
+      console.error(`KI-Dienst-Fehler ${error.status}:`, error.message);
       return errorResponse(502, 'Der KI-Dienst hat einen Fehler gemeldet. Bitte später erneut.');
     }
     console.error('KI-Anfrage fehlgeschlagen:', error);

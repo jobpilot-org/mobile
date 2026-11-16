@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { getSupabaseClient } from '@/features/auth/supabase';
 
-// Zugriff auf den eigenen Anthropic-Key: Die App liest nur die Metadatenzeile des angemeldeten
+// Zugriff auf den eigenen KI-Key: Die App liest nur die Metadatenzeile des angemeldeten
 // Nutzers und schreibt über die RPCs von Supabase, die die Eigentümerschaft aus `auth.uid()`
 // ziehen. Der Key selbst liegt verschlüsselt im Vault und ist für die App nicht lesbar.
 
@@ -27,8 +27,8 @@ export class ApiKeyStoreError extends Error {}
 const apiKeySchema = z
   .string()
   .trim()
-  .min(1, 'Bitte gib deinen Anthropic-API-Key ein.')
-  .refine((value) => !/\s/.test(value), 'Der Anthropic-API-Key darf keine Leerzeichen enthalten.');
+  .min(1, 'Bitte gib deinen API-Key ein.')
+  .refine((value) => !/\s/.test(value), 'Der API-Key darf keine Leerzeichen enthalten.');
 
 /** Fehlertext zur Eingabe oder `null`, wenn sie gespeichert werden kann */
 export function apiKeyInputError(input: string): string | null {

@@ -47,8 +47,8 @@ describe('apiKeyInputError', () => {
   });
 
   it('verlangt eine Eingabe', () => {
-    expect(apiKeyInputError('')).toMatch('Bitte gib deinen Anthropic-API-Key ein.');
-    expect(apiKeyInputError('   ')).toMatch('Bitte gib deinen Anthropic-API-Key ein.');
+    expect(apiKeyInputError('')).toMatch('Bitte gib deinen API-Key ein.');
+    expect(apiKeyInputError('   ')).toMatch('Bitte gib deinen API-Key ein.');
   });
 
   it('weist Leerraum mitten in der Eingabe ab', () => {
