@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { useAiAccess } from '@/features/ai/ai-access';
 import {
   apiKeyInputError,
   ApiKeyStoreError,
   deleteApiKey,
-  loadApiKeyStatus,
   NO_API_KEY,
   saveApiKey,
   type ApiKeyStatus,
@@ -43,29 +43,12 @@ export function ApiKeySettings() {
 
 function ApiKeyForm() {
   const theme = useTheme();
-  const [status, setStatus] = useState<ApiKeyStatus | null>(null);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  // Status und Ladefehler kommen aus der gemeinsamen KI-Freigabe; Speichern und Löschen melden
+  // ihr Ergebnis dorthin zurück, damit die KI-Funktionen sofort mitziehen
+  const { state, status, retry, applyStatus } = useAiAccess();
   const [draft, setDraft] = useState('');
   const [inputError, setInputError] = useState<string | null>(null);
   const [pending, setPending] = useState<'save' | 'delete' | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    loadApiKeyStatus().then(
-      (next) => {
-        if (!active) return;
-        setStatus(next);
-        setLoadFailed(false);
-      },
-      () => {
-        if (active) setLoadFailed(true);
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [attempt]);
 
   async function save() {
     const error = apiKeyInputError(draft);
@@ -74,7 +57,7 @@ function ApiKeyForm() {
 
     setPending('save');
     try {
-      setStatus(await saveApiKey(draft));
+      applyStatus(await saveApiKey(draft));
       // Der eingegebene Key wird nicht behalten: Gespeicherte Keys zeigt die App nie wieder an
       setDraft('');
       showToast({ message: 'API-Key gespeichert' });
@@ -97,7 +80,7 @@ function ApiKeyForm() {
     setPending('delete');
     try {
       await deleteApiKey();
-      setStatus(NO_API_KEY);
+      applyStatus(NO_API_KEY);
       setInputError(null);
       showToast({ message: 'API-Key gelöscht' });
     } catch {
@@ -107,17 +90,12 @@ function ApiKeyForm() {
     }
   }
 
-  if (loadFailed) {
+  if (state === 'error') {
     return (
       <View style={[styles.body, { borderTopColor: theme.border }]}>
         <Text style={[styles.caption, { color: theme.textSecondary }]}>{LOAD_FAILED}</Text>
         <View style={styles.row}>
-          <Button
-            label="Erneut versuchen"
-            variant="secondary"
-            compact
-            onPress={() => setAttempt((count) => count + 1)}
-          />
+          <Button label="Erneut versuchen" variant="secondary" compact onPress={retry} />
         </View>
       </View>
     );

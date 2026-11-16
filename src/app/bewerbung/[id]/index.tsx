@@ -1,9 +1,11 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { useLive, useRepositories } from '@/db/hooks';
 import { buildTimeline } from '@/domain/timeline';
+import { AI_KEY_MISSING_HINT, useAiFeatureLock } from '@/features/ai/ai-feature-lock';
 import { placeLabel } from '@/features/applications/components/application-row';
 import { Facts } from '@/features/applications/components/detail/facts';
 import {
@@ -29,6 +31,7 @@ export default function ApplicationScreen() {
   const router = useRouter();
   const theme = useTheme();
   const repositories = useRepositories();
+  const { locked, ensureUnlocked } = useAiFeatureLock();
   // Nach dem Löschen nicht kurz „nicht gefunden“ zeigen, während der Screen ausblendet
   const [deleting, setDeleting] = useState(false);
 
@@ -70,6 +73,12 @@ export default function ApplicationScreen() {
   }
 
   const place = placeLabel(application);
+
+  /** Ohne eigenen Key erklärt erst der Dialog die Sperre, statt das Assistenten-Modal zu öffnen */
+  async function openAssistant(aufgabe: 'passung' | 'vorbereitung' | 'entwurf') {
+    if (!(await ensureUnlocked())) return;
+    router.push({ pathname: '/bewerbung/[id]/ki', params: { id, aufgabe } });
+  }
 
   return (
     <Screen>
@@ -162,7 +171,17 @@ export default function ApplicationScreen() {
             icon={icon}
             title={title}
             subtitle={subtitle}
-            onPress={() => router.push({ pathname: '/bewerbung/[id]/ki', params: { id, aufgabe } })}
+            trailing={
+              locked ? (
+                <SymbolView
+                  name={{ ios: 'lock.fill', android: 'lock', web: 'lock' }}
+                  tintColor={theme.textSecondary}
+                  size={14}
+                />
+              ) : null
+            }
+            accessibilityHint={locked ? AI_KEY_MISSING_HINT : undefined}
+            onPress={() => openAssistant(aufgabe)}
           />
         ))}
       </Section>

@@ -7,6 +7,7 @@ import { DATABASE_LOCKED_MESSAGE } from '@/db/client';
 import { DatabaseProvider } from '@/db/database-provider';
 import { AuthProvider, useAuth } from '@/features/auth/auth-provider';
 import { LoginScreen } from '@/features/auth/login-screen';
+import { AiAccessProvider } from '@/features/ai/ai-access';
 import { DemoBanner, DemoGate } from '@/features/demo/demo-banner';
 import { isDemo } from '@/features/demo/mode';
 import { ReminderService } from '@/features/reminders/reminder-service';
@@ -82,45 +83,49 @@ function AuthGate() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShadowVisible: false,
-        headerBackButtonDisplayMode: 'minimal',
-        headerTitleStyle: { fontWeight: '600' },
-        contentStyle: { backgroundColor: theme.background },
-      }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="bewerbung/[id]/index" options={{ title: '' }} />
-      <Stack.Screen
-        name="bewerbung/neu"
-        options={{ presentation: 'modal', title: 'Neue Bewerbung' }}
-      />
-      <Stack.Screen
-        name="bewerbung/[id]/bearbeiten"
-        options={{ presentation: 'modal', title: 'Bewerbung bearbeiten' }}
-      />
-      <Stack.Screen
-        name="bewerbung/[id]/termin"
-        options={{ presentation: 'modal', title: 'Termin' }}
-      />
-      <Stack.Screen
-        name="bewerbung/[id]/kontakt"
-        options={{ presentation: 'modal', title: 'Kontakt' }}
-      />
-      <Stack.Screen
-        name="bewerbung/[id]/erinnerung"
-        options={{ presentation: 'modal', title: 'Neue Erinnerung' }}
-      />
-      <Stack.Screen
-        name="bewerbung/aus-anzeige"
-        options={{ presentation: 'modal', title: 'Aus Stellenanzeige' }}
-      />
-      <Stack.Screen
-        name="bewerbung/[id]/ki"
-        options={{ presentation: 'modal', title: 'KI-Assistent' }}
-      />
-      <Stack.Screen name="ueber" options={{ title: 'Über jobpilot' }} />
-    </Stack>
+    // Der Key-Status gehört zur angemeldeten App: Erst hier gibt es eine Session, und in der Demo
+    // fragt der Provider gar nichts ab
+    <AiAccessProvider>
+      <Stack
+        screenOptions={{
+          headerShadowVisible: false,
+          headerBackButtonDisplayMode: 'minimal',
+          headerTitleStyle: { fontWeight: '600' },
+          contentStyle: { backgroundColor: theme.background },
+        }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="bewerbung/[id]/index" options={{ title: '' }} />
+        <Stack.Screen
+          name="bewerbung/neu"
+          options={{ presentation: 'modal', title: 'Neue Bewerbung' }}
+        />
+        <Stack.Screen
+          name="bewerbung/[id]/bearbeiten"
+          options={{ presentation: 'modal', title: 'Bewerbung bearbeiten' }}
+        />
+        <Stack.Screen
+          name="bewerbung/[id]/termin"
+          options={{ presentation: 'modal', title: 'Termin' }}
+        />
+        <Stack.Screen
+          name="bewerbung/[id]/kontakt"
+          options={{ presentation: 'modal', title: 'Kontakt' }}
+        />
+        <Stack.Screen
+          name="bewerbung/[id]/erinnerung"
+          options={{ presentation: 'modal', title: 'Neue Erinnerung' }}
+        />
+        <Stack.Screen
+          name="bewerbung/aus-anzeige"
+          options={{ presentation: 'modal', title: 'Aus Stellenanzeige' }}
+        />
+        <Stack.Screen
+          name="bewerbung/[id]/ki"
+          options={{ presentation: 'modal', title: 'KI-Assistent' }}
+        />
+        <Stack.Screen name="ueber" options={{ title: 'Über jobpilot' }} />
+      </Stack>
+    </AiAccessProvider>
   );
 }
 

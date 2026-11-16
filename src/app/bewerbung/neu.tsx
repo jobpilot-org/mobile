@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useRepositories } from '@/db/hooks';
 import { toLocalIsoDate } from '@/domain/application';
 import { emptyApplicationForm } from '@/domain/forms';
+import { AI_KEY_MISSING_HINT, useAiFeatureLock } from '@/features/ai/ai-feature-lock';
 import { ApplicationForm } from '@/features/applications/components/application-form';
 import { useTheme } from '@/theme/use-theme';
 import { Button } from '@/ui/button';
@@ -14,6 +15,11 @@ export default function NewApplicationScreen() {
   const theme = useTheme();
   const { applications } = useRepositories();
   const goBack = useGoBack('/bewerbungen');
+  const { locked, ensureUnlocked } = useAiFeatureLock();
+
+  async function importFromPosting() {
+    if (await ensureUnlocked()) router.replace('/bewerbung/aus-anzeige');
+  }
 
   return (
     <ApplicationForm
@@ -24,10 +30,15 @@ export default function NewApplicationScreen() {
           </Text>
           <Button
             label="Aus Anzeige übernehmen"
-            icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
+            icon={
+              locked
+                ? { ios: 'lock.fill', android: 'lock', web: 'lock' }
+                : { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }
+            }
+            accessibilityHint={locked ? AI_KEY_MISSING_HINT : undefined}
             variant="secondary"
             compact
-            onPress={() => router.replace('/bewerbung/aus-anzeige')}
+            onPress={importFromPosting}
           />
         </View>
       }

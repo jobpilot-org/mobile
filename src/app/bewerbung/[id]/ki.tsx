@@ -6,6 +6,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { useLive, useRepositories } from '@/db/hooks';
 import { DRAFT_KINDS, DRAFT_LABELS, type AiResponse, type DraftKind } from '@/domain/ai';
 import { NotFound } from '@/features/applications/components/not-found';
+import { useAiFeatureLock } from '@/features/ai/ai-feature-lock';
 import { callAi } from '@/features/ai/client';
 import { ensureAiConsent } from '@/features/ai/consent';
 import { isDemo } from '@/features/demo/mode';
@@ -38,6 +39,7 @@ export default function AssistantScreen() {
   const theme = useTheme();
   const router = useRouter();
   const repositories = useRepositories();
+  const { ensureUnlocked } = useAiFeatureLock();
   const data = useLive(
     ({ applications, details, settings }) => ({
       application: applications.get(id),
@@ -61,7 +63,10 @@ export default function AssistantScreen() {
   const needsProfile = task === 'passung' && !profile.trim();
 
   async function run() {
-    if (!application || !(await ensureAiConsent(repositories))) return;
+    if (!application) return;
+    // Auch direkt geöffnet darf der Screen ohne bestätigten Key weder Zustimmung noch Anfrage starten
+    if (!(await ensureUnlocked())) return;
+    if (!(await ensureAiConsent(repositories))) return;
     setState({ kind: 'loading' });
     const base = { company: application.company, role: application.role };
     const withProfile = profile.trim() ? { profile } : {};

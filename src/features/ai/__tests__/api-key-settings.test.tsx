@@ -1,5 +1,7 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { Text } from 'react-native';
 
+import { AiAccessProvider, useAiAccess } from '@/features/ai/ai-access';
 import { ApiKeySettings } from '@/features/ai/api-key-settings';
 import {
   apiKeyInputError,
@@ -43,6 +45,22 @@ const CONFIGURED = { configured: true, updatedAt: '2025-11-12T09:30:00.000Z' };
 const NOT_CONFIGURED = { configured: false, updatedAt: null };
 const NEW_KEY = 'sk-ant-api03-ABCdef123_-xyz';
 
+/** Zustand der gemeinsamen KI-Freigabe, wie ihn andere Bildschirme sehen */
+function AiAccessProbe() {
+  const { state } = useAiAccess();
+  return <Text>{`KI: ${state}`}</Text>;
+}
+
+/** Die Einstellungen stehen unter dem Provider, der den Status mit der übrigen App teilt */
+function renderSettings() {
+  return render(
+    <AiAccessProvider>
+      <ApiKeySettings />
+      <AiAccessProbe />
+    </AiAccessProvider>,
+  );
+}
+
 /** Tippen wie im Feld: `userEvent.type` wartet die Zustandsänderungen ab */
 async function typeKey(value: string) {
   await userEvent.type(screen.getByLabelText('Anthropic-API-Key'), value);
@@ -58,7 +76,7 @@ beforeEach(() => {
 
 describe('ApiKeySettings', () => {
   it('zeigt ohne hinterlegten Key den Speichern-Zustand', async () => {
-    await render(<ApiKeySettings />);
+    await renderSettings();
 
     expect(await screen.findByText('Noch kein eigener Key hinterlegt.')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Key speichern' })).toBeOnTheScreen();
@@ -68,7 +86,7 @@ describe('ApiKeySettings', () => {
   it('zeigt mit hinterlegtem Key den Zeitpunkt und den Ersetzen-Zustand', async () => {
     mockLoadStatus.mockResolvedValue(CONFIGURED);
 
-    await render(<ApiKeySettings />);
+    await renderSettings();
 
     expect(
       await screen.findByText(/Eigener Key hinterlegt · zuletzt geändert am 12\.11\.2025/),
@@ -79,7 +97,7 @@ describe('ApiKeySettings', () => {
 
   it('speichert den Key, leert die Eingabe und aktualisiert den Status', async () => {
     mockSaveKey.mockResolvedValue(CONFIGURED);
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByText('Noch kein eigener Key hinterlegt.');
 
     await typeKey(NEW_KEY);
@@ -89,11 +107,12 @@ describe('ApiKeySettings', () => {
     expect(screen.getByLabelText('Anthropic-API-Key').props.value).toBe('');
     expect(mockShowToast).toHaveBeenCalledWith({ message: 'API-Key gespeichert' });
     expect(screen.getByRole('button', { name: 'Key ersetzen' })).toBeOnTheScreen();
+    expect(screen.getByText('KI: configured')).toBeOnTheScreen();
   });
 
   it('weist unbrauchbare Eingaben vor dem Speichern ab', async () => {
     mockInputError.mockReturnValue('Bitte gib deinen Anthropic-API-Key ein.');
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByText('Noch kein eigener Key hinterlegt.');
 
     await typeKey('x');
@@ -105,7 +124,7 @@ describe('ApiKeySettings', () => {
 
   it('meldet einen Fehler beim Speichern am Feld', async () => {
     mockSaveKey.mockRejectedValue(new ApiKeyStoreError('Speichern fehlgeschlagen.'));
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByText('Noch kein eigener Key hinterlegt.');
 
     await typeKey(NEW_KEY);
@@ -117,7 +136,7 @@ describe('ApiKeySettings', () => {
 
   it('löscht den Key erst nach der Rückfrage', async () => {
     mockLoadStatus.mockResolvedValue(CONFIGURED);
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByRole('button', { name: 'Key löschen' });
 
     await userEvent.press(screen.getByRole('button', { name: 'Key löschen' }));
@@ -128,12 +147,13 @@ describe('ApiKeySettings', () => {
     expect(mockDeleteKey).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('Noch kein eigener Key hinterlegt.')).toBeOnTheScreen();
     expect(mockShowToast).toHaveBeenCalledWith({ message: 'API-Key gelöscht' });
+    expect(screen.getByText('KI: missing')).toBeOnTheScreen();
   });
 
   it('löscht nichts, wenn die Rückfrage abgelehnt wird', async () => {
     mockLoadStatus.mockResolvedValue(CONFIGURED);
     mockConfirm.mockResolvedValue(false);
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByRole('button', { name: 'Key löschen' });
 
     await userEvent.press(screen.getByRole('button', { name: 'Key löschen' }));
@@ -144,7 +164,7 @@ describe('ApiKeySettings', () => {
   it('meldet einen Fehler beim Löschen als Hinweis', async () => {
     mockLoadStatus.mockResolvedValue(CONFIGURED);
     mockDeleteKey.mockRejectedValue(new ApiKeyStoreError('Löschen fehlgeschlagen.'));
-    await render(<ApiKeySettings />);
+    await renderSettings();
     await screen.findByRole('button', { name: 'Key löschen' });
 
     await userEvent.press(screen.getByRole('button', { name: 'Key löschen' }));
@@ -160,7 +180,7 @@ describe('ApiKeySettings', () => {
     mockLoadStatus
       .mockRejectedValueOnce(new ApiKeyStoreError('weg'))
       .mockResolvedValueOnce(NOT_CONFIGURED);
-    await render(<ApiKeySettings />);
+    await renderSettings();
 
     expect(
       await screen.findByText('Der Status deines API-Keys konnte nicht geladen werden.'),
@@ -174,9 +194,11 @@ describe('ApiKeySettings', () => {
   it('zeigt in der Demo keine Key-Verwaltung', async () => {
     mockIsDemo = true;
 
-    await render(<ApiKeySettings />);
+    await renderSettings();
 
     expect(screen.queryByLabelText('Anthropic-API-Key')).not.toBeOnTheScreen();
     expect(mockLoadStatus).not.toHaveBeenCalled();
+    // Die übrige App sieht die KI trotzdem als verfügbar
+    expect(screen.getByText('KI: configured')).toBeOnTheScreen();
   });
 });
