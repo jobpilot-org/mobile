@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useLive, useRepositories } from '@/db/hooks';
 import { MAX_PROFILE_CHARS } from '@/domain/ai';
+import { ApiKeySettings } from '@/features/ai/api-key-settings';
 import { revokeAiConsent } from '@/features/ai/consent';
 import { isDemo } from '@/features/demo/mode';
 import { useTheme } from '@/theme/use-theme';
@@ -69,6 +70,8 @@ export function AiSettings() {
           />
         ) : null}
       </View>
+      {/* Eigener Key des Nutzers; Profil und Zustimmung bleiben davon unberührt lokal */}
+      <ApiKeySettings />
     </View>
   );
 }

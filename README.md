@@ -18,7 +18,7 @@
 - **KI-Assistent (Claude):** Stellenanzeige einfügen und Felder vorausfüllen lassen, Passung zum eigenen Profil, Gesprächsvorbereitung, Entwürfe für Anschreiben, Nachfass- und Dankes-Mail
 - **Auswertung:** Funnel nach höchster erreichter Stufe, Antwortquote, Zeit bis zur Rückmeldung, Erfolg je Quelle, Aktivität pro Woche
 - **Board-Ansicht** auf breiten Bildschirmen, Hell- und Dunkelmodus, native Tabs und Datums-Picker
-- **Offline und privat:** alle Daten lokal in SQLite; Backup als JSON, Export als CSV
+- **Offline und privat:** Bewerbungen und Profil liegen lokal in SQLite; Backup als JSON, Export als CSV. Nur der KI-Schlüssel jedes Nutzers liegt verschlüsselt in Supabase (Vault)
 
 | Übersicht                                        | Detailseite                                    | KI: Passung                                 | Auswertung                                        |
 | ------------------------------------------------ | ---------------------------------------------- | ------------------------------------------- | ------------------------------------------------- |
@@ -40,8 +40,9 @@ flowchart LR
   end
   subgraph Server["Server (EAS Hosting)"]
     Routes["API-Routen<br/>/api/ki/*"] --> Claude["Claude API<br/>Structured Outputs"]
+    Routes -- "Bearer-Token" --> Vault[("Supabase Vault<br/>Key je Nutzer")]
   end
-  AiClient -- "HTTPS" --> Routes
+  AiClient -- "HTTPS · Bearer-Token" --> Routes
   Domain["domain/<br/>reine Logik"] -.-> UI
   Domain -.-> Repo
   Domain -.-> Routes
@@ -49,7 +50,7 @@ flowchart LR
 
 - **`domain/`** enthält die Geschäftslogik als reine Funktionen: Pipeline, Filter, Sortierung, Formular-Validierung, Erinnerungsregeln, Auswertungen, Backup-Format, KI-Schemas. Sie wird von App, Datenbankschicht und Server gemeinsam genutzt und ist ohne React getestet.
 - **Datenzugriff nur über Repositories**, geschrieben gegen jeden synchronen SQLite-Treiber von Drizzle: expo-sqlite in der App, better-sqlite3 in den Tests – die Tests prüfen echtes SQL mit denselben Migrationen.
-- **Der API-Key existiert nur auf dem Server.** App und Server teilen sich die zod-Schemas für Anfragen und Antworten.
+- **Der Anthropic-Key gehört dem Nutzer.** Angemeldete Nutzer hinterlegen ihren eigenen Key in den Einstellungen; er liegt verschlüsselt im Supabase Vault, die App sieht nur den Zeitpunkt der letzten Änderung. Erst die API-Routen lesen ihn – mit dem Bearer-Token des Aufrufers und nur für den Nutzer, den Supabase daraus ermittelt. Nur die öffentliche Demo nutzt weiter den Key des Servers. App und Server teilen sich die zod-Schemas für Anfragen und Antworten.
 
 ### Entscheidungen
 
@@ -60,6 +61,7 @@ flowchart LR
 | [ADR 3](docs/adr/0003-erinnerungen-als-idempotenter-abgleich.md) | Erinnerungen als idempotenter Abgleich von Regeln, Datenbank und Benachrichtigungen |
 | [ADR 4](docs/adr/0004-patches-fuer-expo-sqlite.md)               | Zwei Fehler in expo-sqlite (Web) gefunden und per Patch behoben                     |
 | [ADR 5](docs/adr/0005-ki-ueber-eigene-api-routen.md)             | KI über eigene API-Routen, Structured Outputs, abgesicherte öffentliche Demo        |
+| [ADR 6](docs/adr/0006-benutzer-eigene-anthropic-schluessel.md)   | Benutzer-eigene Anthropic-Schlüssel im Supabase Vault                               |
 
 ## Tech-Stack
 
@@ -72,7 +74,7 @@ flowchart LR
 
 ## Qualität
 
-- **124 Tests**: Domain-Logik, Repositories gegen echtes SQLite, eine Migration mit Daten im alten Format, Erinnerungsregeln und -abgleich, KI-Server mit nachgebautem Anthropic-Client, Demo-Schutz, Hooks und Komponenten
+- **195 Tests**: Domain-Logik, Repositories gegen echtes SQLite, eine Migration mit Daten im alten Format, Erinnerungsregeln und -abgleich, KI-Server mit nachgebautem Anthropic-Client, Demo-Schutz, Key-Verwaltung, Hooks und Komponenten
 - CI prüft Lint, Typecheck und Tests bei jedem Push und Pull Request
 - Barrierefreiheit: Labels und Rollen für Screenreader, Kontraste nach WCAG AA (Status- und Diagrammfarben rechnerisch geprüft)
 
@@ -103,12 +105,27 @@ npm start          # Dev-Server, dann i (iOS) oder a (Android) – oder QR-Code 
 
 ### KI-Assistent einrichten
 
+Der Assistent spricht Claude über die API-Routen des eigenen Servers an. Angemeldete Nutzer hinterlegen ihren Anthropic-API-Key in der App unter **Einstellungen → KI-Assistent**; die App speichert ihn nie selbst, sondern reicht ihn an die Supabase-RPC weiter, die ihn verschlüsselt im Vault ablegt. Beim Speichern prüft die App nur, dass etwas eingegeben wurde und kein Leerraum darin steckt – kein festes Präfix, damit sich Key-Formate ändern dürfen. Ob der Key gilt, zeigt die nächste Anfrage an Claude, und ein abgelehnter Key lässt sich an derselben Stelle ersetzen.
+
+Für die API-Routen genügt dieselbe öffentliche Supabase-Konfiguration wie in der App; ein Servergeheimnis gibt es nicht:
+
 ```bash
-cp .env.example .env.local   # ANTHROPIC_API_KEY eintragen
+cp .env.example .env.local   # Werte eintragen, .env.local ist nicht eingecheckt
 npm start                    # der Dev-Server stellt auch die API-Routen bereit
 ```
 
-Ohne Key funktioniert die App normal, nur der Assistent meldet, dass er nicht eingerichtet ist.
+| Variable                               | Wo sie gilt          | Wofür                                                                                         |
+| -------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_SUPABASE_URL`             | App **und** Server   | Projekt-URL; der Server prüft damit die Access-Tokens der App                                 |
+| `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | App **und** Server   | Anmeldung und API-Zugriff; der Server reicht damit das Token des Aufrufers an Postgres weiter |
+| `ANTHROPIC_API_KEY`                    | nur Server, nur Demo | Gemeinsamer Key der öffentlichen Demo (`JOBPILOT_DEMO=1`), in der normalen App unbenutzt      |
+| `JOBPILOT_DEMO=1`                      | nur Server           | Demo-Betrieb: keine Anmeldung, nur Demo-Inhalte, IP-Limit, Zwischenspeicher                   |
+
+Ohne `ANTHROPIC_API_KEY` funktioniert die App normal; nur der Assistent meldet, dass er nicht eingerichtet ist. Ohne Supabase-Konfiguration antworten die KI-Routen mit einem Serverfehler, weil sie weder Tokens prüfen noch Keys lesen können.
+
+Der Server hält keinen Schlüssel mit Service-Rolle: Er schickt das `Authorization: Bearer <access-token>` des Aufrufers an Supabase, und die RPC `get_ai_api_key()` liest allein über `auth.uid()` den Key dieses Nutzers. Wer ein gültiges Token dieses Nutzers besitzt, kann dessen eigenen Key lesen – nicht mehr und nicht weniger als das, was der Key ohnehin erlaubt (Anthropic-Verbrauch des Nutzers).
+
+Für die öffentliche Demo reicht der Server-Key: Sie läuft mit `EXPO_PUBLIC_DEMO=1` und `JOBPILOT_DEMO=1` ohne Anmeldung, und die Key-Verwaltung bleibt dort ausgeblendet.
 
 ### Anmeldung (Supabase)
 
@@ -126,6 +143,8 @@ Die Werte aus der Ausgabe in `mobile/.env.local` eintragen – die Datei übersc
 EXPO_PUBLIC_SUPABASE_URL=http://localhost:54321
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<publishable key aus der Ausgabe>
 ```
+
+Der publishable Key genügt für App und Server; einen Service-Rollen-Schlüssel braucht die App nicht mehr. Er bleibt in `supabase status` sichtbar, gehört aber in keine Umgebungsdatei.
 
 `localhost` passt für Web und iOS-Simulator. Der Android-Emulator erreicht den Rechner unter `http://10.0.2.2:54321`, ein echtes Gerät nur über die LAN-Adresse des Rechners (`http://192.168.x.x:54321`). Nach einer Änderung an den Variablen den Dev-Server neu starten. Auch lokal gilt: Nutzer im Dashboard unter `http://localhost:54323` anlegen (oder per Seed-SQL), weil Sign-ups abgeschaltet sind.
 
@@ -169,3 +188,10 @@ npm run deploy:web   # Export mit Demo-Modus und Deployment auf EAS Hosting
 ```
 
 Mit verbundenem GitHub-Repo veröffentlicht `.eas/workflows/deploy-web.yml` die Demo bei jedem Push auf `main` automatisch.
+
+## Key-Verwaltung im Betrieb
+
+- Die Migration `backend/supabase/migrations/*_ai_api_key.sql` legt die Tabelle, die Vault-Anbindung, die RPCs und die Rechte an. Sie einmalig auf das Cloud-Projekt anwenden (`cd backend && supabase db push`).
+- In der EAS-Umgebung der echten App braucht der Server nur `EXPO_PUBLIC_SUPABASE_URL` und `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`; beide sind öffentlich, `ANTHROPIC_API_KEY` ist dort nicht nötig. Ein zusätzliches Servergeheimnis gibt es nicht.
+- Bestehende Konten tragen ihren eigenen Key nach dem Deployment einmal ein – der bisherige Server-Key lässt sich nicht auf Personen verteilen.
+- Keys werden beim Speichern nicht gegen Anthropic geprüft; ein ungültiger Key meldet sich beim nächsten KI-Aufruf und lässt sich in den Einstellungen ersetzen.
