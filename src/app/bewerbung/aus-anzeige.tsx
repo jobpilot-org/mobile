@@ -6,6 +6,7 @@ import { useRepositories } from '@/db/hooks';
 import { MAX_POSTING_CHARS, type AiResponse } from '@/domain/ai';
 import { DEMO_POSTING } from '@/domain/demo';
 import { ApplicationForm } from '@/features/applications/components/application-form';
+import { useAiFeatureLock } from '@/features/ai/ai-feature-lock';
 import { callAi } from '@/features/ai/client';
 import { ensureAiConsent } from '@/features/ai/consent';
 import { extractionToForm } from '@/features/ai/format';
@@ -26,11 +27,14 @@ export default function FromPostingScreen() {
   const router = useRouter();
   const repositories = useRepositories();
   const goBack = useGoBack('/bewerbungen');
+  const { ensureUnlocked } = useAiFeatureLock();
   // In der Web-Demo nur mit der Beispiel-Anzeige (der Server lehnt andere Texte ab)
   const [posting, setPosting] = useState(isDemo ? DEMO_POSTING : '');
   const [step, setStep] = useState<Step>({ kind: 'input' });
 
   async function analyze() {
+    // Ohne eigenen Key weder Zustimmung noch Anfrage: erst der Hinweis auf die Einstellungen
+    if (!(await ensureUnlocked())) return;
     if (!(await ensureAiConsent(repositories))) return;
     setStep({ kind: 'loading' });
     try {
