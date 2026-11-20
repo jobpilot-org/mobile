@@ -3,6 +3,7 @@ import {
   emptyApplicationForm,
   emptyContactForm,
   emptyRegistrationForm,
+  missingPasswordRules,
   parseApplicationForm,
   parseAppointmentForm,
   parseContactForm,
@@ -142,8 +143,8 @@ describe('parseRegistrationForm', () => {
     firstName: ' Erika ',
     lastName: 'Muster',
     email: ' Erika@Example.DE ',
-    password: 'geheim123',
-    passwordRepeat: 'geheim123',
+    password: 'Geheim-123',
+    passwordRepeat: 'Geheim-123',
   };
 
   it('liefert getrimmte Namen, die E-Mail in Kleinbuchstaben und das Passwort ohne Wiederholung', () => {
@@ -153,7 +154,7 @@ describe('parseRegistrationForm', () => {
         firstName: 'Erika',
         lastName: 'Muster',
         email: 'erika@example.de',
-        password: 'geheim123',
+        password: 'Geheim-123',
       },
     });
   });
@@ -165,14 +166,15 @@ describe('parseRegistrationForm', () => {
         firstName: 'Bitte den Vornamen eingeben',
         lastName: 'Bitte den Nachnamen eingeben',
         email: 'Bitte eine gültige E-Mail-Adresse eingeben',
-        password: 'Das Passwort braucht mindestens 8 Zeichen',
+        password:
+          'Das Passwort braucht mindestens 8 Zeichen, einen Großbuchstaben, eine Zahl und ein Sonderzeichen',
       },
     });
   });
 
   it('meldet abweichende Passwort-Wiederholung auch neben anderen Fehlern', () => {
     expect(
-      parseRegistrationForm({ ...registration, firstName: '', passwordRepeat: 'geheim124' }),
+      parseRegistrationForm({ ...registration, firstName: '', passwordRepeat: 'Geheim-124' }),
     ).toEqual({
       ok: false,
       errors: {
@@ -182,9 +184,27 @@ describe('parseRegistrationForm', () => {
     });
   });
 
-  it('lehnt zu kurze Passwörter ab', () => {
+  it('nennt alle noch fehlenden Passwortregeln in einem Satz', () => {
     expect(
-      parseRegistrationForm({ ...registration, password: 'kurz', passwordRepeat: 'kurz' }),
-    ).toEqual({ ok: false, errors: { password: 'Das Passwort braucht mindestens 8 Zeichen' } });
+      parseRegistrationForm({ ...registration, password: 'Kurz1', passwordRepeat: 'Kurz1' }),
+    ).toEqual({
+      ok: false,
+      errors: { password: 'Das Passwort braucht mindestens 8 Zeichen und ein Sonderzeichen' },
+    });
+  });
+});
+
+describe('missingPasswordRules', () => {
+  it('prüft Länge, Großbuchstabe, Zahl und Sonderzeichen', () => {
+    expect(missingPasswordRules('Geheim-123')).toEqual([]);
+    expect(missingPasswordRules('geheim-123')).toEqual(['einen Großbuchstaben']);
+    expect(missingPasswordRules('Geheim-abc')).toEqual(['eine Zahl']);
+    expect(missingPasswordRules('Geheim1234')).toEqual(['ein Sonderzeichen']);
+    expect(missingPasswordRules('Ge-1')).toEqual(['mindestens 8 Zeichen']);
+  });
+
+  it('erkennt Umlaute als Großbuchstaben und Leerzeichen nicht als Sonderzeichen', () => {
+    expect(missingPasswordRules('Ärger 1234')).toEqual(['ein Sonderzeichen']);
+    expect(missingPasswordRules('ärger-1234€')).toEqual(['einen Großbuchstaben']);
   });
 });

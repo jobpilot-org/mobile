@@ -225,6 +225,30 @@ export function parseContactForm(
 /** Mindestlänge für neue Passwörter; Supabase prüft dieselbe Grenze (minimum_password_length) */
 export const MIN_PASSWORD_LENGTH = 8;
 
+/** Regeln für neue Passwörter; `label` passt in „Das Passwort braucht …“ */
+export const PASSWORD_RULES: readonly { label: string; test: (password: string) => boolean }[] = [
+  {
+    label: `mindestens ${MIN_PASSWORD_LENGTH} Zeichen`,
+    test: (password) => password.length >= MIN_PASSWORD_LENGTH,
+  },
+  { label: 'einen Großbuchstaben', test: (password) => /\p{Lu}/u.test(password) },
+  { label: 'eine Zahl', test: (password) => /\p{N}/u.test(password) },
+  // Alles außer Buchstaben, Ziffern und Leerraum, z. B. ! ? - _ # € §
+  { label: 'ein Sonderzeichen', test: (password) => /[^\p{L}\p{N}\s]/u.test(password) },
+];
+
+/** Die Regeln, die das Passwort noch nicht erfüllt, als Text in Regelreihenfolge */
+export function missingPasswordRules(password: string): string[] {
+  return PASSWORD_RULES.filter((rule) => !rule.test(password)).map((rule) => rule.label);
+}
+
+/** „a“, „a und b“, „a, b und c“ */
+function joinWithAnd(parts: string[]) {
+  return parts.length < 2
+    ? parts.join('')
+    : `${parts.slice(0, -1).join(', ')} und ${parts[parts.length - 1]}`;
+}
+
 export type RegistrationFormValues = {
   firstName: string;
   lastName: string;
@@ -250,9 +274,12 @@ const registrationSchema = z.object({
     .trim()
     .toLowerCase()
     .pipe(z.email('Bitte eine gültige E-Mail-Adresse eingeben')),
-  password: z
-    .string()
-    .min(MIN_PASSWORD_LENGTH, `Das Passwort braucht mindestens ${MIN_PASSWORD_LENGTH} Zeichen`),
+  password: z.string().superRefine((password, ctx) => {
+    const missing = missingPasswordRules(password);
+    if (missing.length > 0) {
+      ctx.addIssue({ code: 'custom', message: `Das Passwort braucht ${joinWithAnd(missing)}` });
+    }
+  }),
   passwordRepeat: z.string(),
 });
 
