@@ -2,9 +2,11 @@ import {
   applicationToForm,
   emptyApplicationForm,
   emptyContactForm,
+  emptyRegistrationForm,
   parseApplicationForm,
   parseAppointmentForm,
   parseContactForm,
+  parseRegistrationForm,
   type ApplicationFormValues,
 } from '@/domain/forms';
 
@@ -131,5 +133,58 @@ describe('parseAppointmentForm', () => {
       ok: true,
       value: { kind: 'video', startsAt: '2026-10-12T08:00:00.000Z' },
     });
+  });
+});
+
+describe('parseRegistrationForm', () => {
+  const registration = {
+    ...emptyRegistrationForm(),
+    firstName: ' Erika ',
+    lastName: 'Muster',
+    email: ' Erika@Example.DE ',
+    password: 'geheim123',
+    passwordRepeat: 'geheim123',
+  };
+
+  it('liefert getrimmte Namen, die E-Mail in Kleinbuchstaben und das Passwort ohne Wiederholung', () => {
+    expect(parseRegistrationForm(registration)).toEqual({
+      ok: true,
+      value: {
+        firstName: 'Erika',
+        lastName: 'Muster',
+        email: 'erika@example.de',
+        password: 'geheim123',
+      },
+    });
+  });
+
+  it('meldet fehlende Pflichtfelder pro Feld', () => {
+    expect(parseRegistrationForm(emptyRegistrationForm())).toEqual({
+      ok: false,
+      errors: {
+        firstName: 'Bitte den Vornamen eingeben',
+        lastName: 'Bitte den Nachnamen eingeben',
+        email: 'Bitte eine gültige E-Mail-Adresse eingeben',
+        password: 'Das Passwort braucht mindestens 8 Zeichen',
+      },
+    });
+  });
+
+  it('meldet abweichende Passwort-Wiederholung auch neben anderen Fehlern', () => {
+    expect(
+      parseRegistrationForm({ ...registration, firstName: '', passwordRepeat: 'geheim124' }),
+    ).toEqual({
+      ok: false,
+      errors: {
+        firstName: 'Bitte den Vornamen eingeben',
+        passwordRepeat: 'Die Passwörter stimmen nicht überein',
+      },
+    });
+  });
+
+  it('lehnt zu kurze Passwörter ab', () => {
+    expect(
+      parseRegistrationForm({ ...registration, password: 'kurz', passwordRepeat: 'kurz' }),
+    ).toEqual({ ok: false, errors: { password: 'Das Passwort braucht mindestens 8 Zeichen' } });
   });
 });

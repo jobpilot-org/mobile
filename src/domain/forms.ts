@@ -220,6 +220,62 @@ export function parseContactForm(
   return { ok: true, value: withoutUndefined(result.data) };
 }
 
+// --- Registrierung ---------------------------------------------------------------------------
+
+/** Mindestlänge für neue Passwörter; Supabase prüft dieselbe Grenze (minimum_password_length) */
+export const MIN_PASSWORD_LENGTH = 8;
+
+export type RegistrationFormValues = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  passwordRepeat: string;
+};
+
+export type RegistrationFormField = keyof RegistrationFormValues;
+
+export type Registration = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+};
+
+const registrationSchema = z.object({
+  firstName: z.string().trim().min(1, 'Bitte den Vornamen eingeben'),
+  lastName: z.string().trim().min(1, 'Bitte den Nachnamen eingeben'),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email('Bitte eine gültige E-Mail-Adresse eingeben')),
+  password: z
+    .string()
+    .min(MIN_PASSWORD_LENGTH, `Das Passwort braucht mindestens ${MIN_PASSWORD_LENGTH} Zeichen`),
+  passwordRepeat: z.string(),
+});
+
+export function emptyRegistrationForm(): RegistrationFormValues {
+  return { firstName: '', lastName: '', email: '', password: '', passwordRepeat: '' };
+}
+
+export function parseRegistrationForm(
+  values: RegistrationFormValues,
+): FormResult<Registration, RegistrationFormField> {
+  const result = registrationSchema.safeParse(values);
+  const errors: Partial<Record<RegistrationFormField, string>> = result.success
+    ? {}
+    : collectErrors(result.error);
+  // Selbst geprüft statt per refine, damit die Meldung auch neben anderen Fehlern erscheint
+  if (!errors.password && values.password !== values.passwordRepeat) {
+    errors.passwordRepeat = 'Die Passwörter stimmen nicht überein';
+  }
+  if (!result.success || Object.keys(errors).length > 0) return { ok: false, errors };
+  const { passwordRepeat: _, ...registration } = result.data;
+  return { ok: true, value: registration };
+}
+
 /** Leere optionale Felder ganz weglassen statt sie als undefined mitzuführen */
 function withoutUndefined<T extends object>(value: T): T {
   return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as T;
