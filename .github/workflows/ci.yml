@@ -2,12 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
 
 jobs:
   check:
@@ -21,7 +25,11 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Das Paket @jobpilot-org/shared-ai kommt aus GitHub Packages und verlangt auch als
+      # öffentliches Paket ein Token; `GITHUB_TOKEN` mit `packages: read` genügt.
       - run: npm ci
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint
         run: npm run lint
