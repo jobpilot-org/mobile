@@ -22,7 +22,6 @@ const extraction = {
   summary: 'Fullstack-Stelle mit React und Node.js.',
 };
 
-/** Nachgebauter Client: zeichnet Anfragen auf und liefert eine vorbereitete Antwort */
 function fakeClient(reply: Partial<{ stop_reason: string; parsed_output: unknown }>) {
   const calls: Record<string, unknown>[] = [];
   const client = {

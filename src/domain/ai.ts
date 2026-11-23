@@ -1,4 +1,3 @@
-// Gemeinsame Verträge liegen im Paket; der Pfad @/domain/ai bleibt für die Importe der App bestehen.
 export {
   AI_ACTIONS,
   DRAFT_KINDS,

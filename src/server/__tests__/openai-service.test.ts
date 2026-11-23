@@ -37,7 +37,6 @@ type Reply = {
   error?: Error;
 };
 
-/** Nachgebauter Client: zeichnet Anfragen auf und liefert eine vorbereitete Antwort */
 function fakeClient(reply: Reply) {
   const calls: Record<string, unknown>[] = [];
   const client = {

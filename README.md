@@ -87,7 +87,7 @@ src/
   domain/       reine Logik ohne React
   db/           Schema, Repositories, Datenbankanbindung, Live-Abfragen
   features/     applications/, insights/, reminders/, ai/, demo/, data-transfer/
-  server/       nur für API-Routen: KI-Provider, Prompts, Rate-Limit
+  server/       nur für API-Routen: Provider-Auswahl, Rate-Limit (Prompts und Aufrufe aus shared-ai)
   ui/           wiederverwendbare Bausteine
   theme/        Farben für Hell und Dunkel
 drizzle/        SQL-Migrationen
@@ -97,7 +97,12 @@ patches/        Korrekturen an Abhängigkeiten (patch-package)
 
 ## Starten
 
-Voraussetzung: Node.js 22
+Voraussetzung: Node.js 22 und ein GitHub-Token mit `read:packages`, denn `@jobpilot-org/shared-ai` kommt aus GitHub Packages. Vor `npm install` das Token in die Umgebung laden (nie in eine Datei schreiben):
+
+```bash
+set -a; . ~/.config/jobpilot/github.env; set +a
+export NODE_AUTH_TOKEN="$GITHUB_PACKAGES_TOKEN"
+```
 
 ```bash
 npm install

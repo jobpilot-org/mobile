@@ -28,7 +28,6 @@ type FakeClientOptions = {
   vaultError?: { message: string } | null;
 };
 
-/** Nachgebauter Supabase-Client: zeichnet Token-Prüfung und Vault-Aufruf auf */
 function fakeClient({
   user = null,
   userError = null,
